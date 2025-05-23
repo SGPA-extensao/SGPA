@@ -25,15 +25,14 @@ export const Sidebar = () => {
     await logout();
   };
 
-  const navItems = [
-    { name: 'Dashboard', path: '/dashboard', icon: <LayoutDashboard className="h-5 w-5" /> },
-    { name: 'Membros', path: '/members', icon: <Users className="h-5 w-5" /> },
-    { name: 'Frequência', path: '/attendance', icon: <BarChart className="h-5 w-5" /> },
-    { name: 'Agenda', path: '/schedule', icon: <Calendar className="h-5 w-5" /> },
-    { name: 'Pagamentos', path: '/payments', icon: <CreditCard className="h-5 w-5" /> },
-    { name: 'Configurações', path: '/settings', icon: <Settings className="h-5 w-5" /> },
-  ];
-
+const navItems = [
+  { name: 'Dashboard', path: '/dashboard', icon: <LayoutDashboard className="h-5 w-5" /> },
+  { name: 'Membros', path: '/members', icon: <Users className="h-5 w-5" /> },
+  { name: 'Frequência', path: '/attendance', icon: <BarChart className="h-5 w-5" /> },
+  { name: 'Agenda', path: '/agenda', icon: <Calendar className="h-5 w-5" /> },  // <-- aqui
+  { name: 'Pagamentos', path: '/payments', icon: <CreditCard className="h-5 w-5" /> },
+  { name: 'Configurações', path: '/settings', icon: <Settings className="h-5 w-5" /> },
+]
   return (
     <div 
       className={cn(

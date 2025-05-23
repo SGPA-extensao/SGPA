@@ -63,7 +63,7 @@ const Login = () => {
     fontWeight: '600',
     whiteSpace: 'nowrap',
     userSelect: 'none',
-    marginLeft: '-3cm', 
+    marginLeft: '3cm', 
     marginRight: '3cm',  // distância da linha em 1cm
   }}
 >
