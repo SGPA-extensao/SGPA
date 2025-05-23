@@ -15,7 +15,8 @@ import Members from "@/pages/Members";
 import MemberForm from "@/pages/MemberForm";
 import MemberProfile from "@/pages/MemberProfile";
 import NotFound from "@/pages/NotFound";
-
+import Frequencia from "@/pages/Frequencia";
+import Pagamento from "./pages/Pagamento";
 import AgendaAdm from "@/pages/AdminAgenda";  // Importação da tela AgendaAdm
 
 const queryClient = new QueryClient();
@@ -32,15 +33,17 @@ const App = () => (
             <Route path="/signup" element={<Signup />} />
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/reset-password-request" element={<ResetPasswordRequest />} />
-            
+            <Route path="/attendance" element={<Layout><Frequencia /></Layout>} />
             <Route path="/" element={<Layout><Dashboard /></Layout>} />
             <Route path="/dashboard" element={<Layout><Dashboard /></Layout>} />
             <Route path="/members" element={<Layout><Members /></Layout>} />
             <Route path="/members/new" element={<Layout><MemberForm /></Layout>} />
             <Route path="/members/edit/:id" element={<Layout><MemberForm /></Layout>} />
             <Route path="/members/view/:id" element={<Layout><MemberProfile /></Layout>} />
+            <Route path="/Frequencia" element={<Layout><Frequencia /></Layout>} />
+            <Route path="/agenda" element={<Layout><AgendaAdm /></Layout>} />  
+            <Route path="/payments" element={<Layout><Pagamento/></Layout>} />  
 
-            <Route path="/agenda" element={<Layout><AgendaAdm /></Layout>} />  {/* Rota da agenda */}
 
             <Route path="*" element={<NotFound />} />
           </Routes>
