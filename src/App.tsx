@@ -16,8 +16,10 @@ import MemberForm from "@/pages/MemberForm";
 import MemberProfile from "@/pages/MemberProfile";
 import NotFound from "@/pages/NotFound";
 import Frequencia from "@/pages/Frequencia";
-import Pagamento from "./pages/Pagamento";
+import Pagamento from "@/pages/Pagamento";
 import AgendaAdm from "@/pages/AdminAgenda";  // Importação da tela AgendaAdm
+//import Settings from "@/pages/settings";
+
 
 const queryClient = new QueryClient();
 

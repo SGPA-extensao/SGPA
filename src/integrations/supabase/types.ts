@@ -168,6 +168,33 @@ export type Database = {
         }
         Relationships: []
       }
+      agenda: {
+        Row: {
+          id: number
+          title: string
+          date: string
+          time: string
+          responsible: string
+          created_at: string
+        }
+        Insert: {
+          id?: number
+          title: string
+          date: string
+          time: string
+          responsible: string
+          created_at?: string
+        }
+        Update: {
+          id?: number
+          title?: string
+          date?: string
+          time?: string
+          responsible?: string
+          created_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

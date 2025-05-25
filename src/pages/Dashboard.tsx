@@ -1,11 +1,18 @@
-
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/components/ui/use-toast';
 import { Users, CheckCircle, AlertCircle, BarChart } from 'lucide-react';
-import { BarChart as ReBarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import {
+  BarChart as ReBarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer
+} from 'recharts';
 
 interface DashboardStats {
   activeMembers: number;
@@ -33,51 +40,83 @@ const Dashboard = () => {
     const fetchDashboardData = async () => {
       setIsLoading(true);
       try {
-        // This would be replaced by actual data fetching from Supabase
-        // For now we'll use mock data
-        
-        // Mock active members count
+        // Buscar membros ativos
         const { count: activeCount, error: activeError } = await supabase
           .from('members')
           .select('*', { count: 'exact', head: true })
           .eq('status', true);
-          
+
         if (activeError) throw activeError;
-        
-        // Mock payments in good standing
+
+        // Buscar pagamentos em dia
         const { count: paidCount, error: paidError } = await supabase
           .from('payments')
           .select('*', { count: 'exact', head: true })
           .eq('status', 'paid');
-          
+
         if (paidError) throw paidError;
-        
-        // Mock expiring plans
+
+        // Buscar planos a vencer (status pendente)
         const { count: expiringCount, error: expiringError } = await supabase
           .from('payments')
           .select('*', { count: 'exact', head: true })
           .eq('status', 'pending');
-          
+
         if (expiringError) throw expiringError;
-        
-        // If we couldn't get real data, use mock data
+
         setStats({
-          activeMembers: activeCount ?? 45,
-          paidMembers: paidCount ?? 38,
-          expiringPlans: expiringCount ?? 7,
+          activeMembers: activeCount ?? 0,
+          paidMembers: paidCount ?? 0,
+          expiringPlans: expiringCount ?? 0,
         });
-        
-        // Mock attendance data
-        setAttendanceData([
-          { name: 'Segunda', count: 28 },
-          { name: 'Terça', count: 35 },
-          { name: 'Quarta', count: 42 },
-          { name: 'Quinta', count: 38 },
-          { name: 'Sexta', count: 29 },
-          { name: 'Sábado', count: 15 },
-          { name: 'Domingo', count: 0 },
-        ]);
-        
+
+        // Agora buscar dados de frequência da semana atual
+        const today = new Date();
+        // Pega domingo da semana atual (assumindo domingo como início da semana)
+        const dayOfWeek = today.getDay(); // 0 (dom) a 6 (sáb)
+        const sunday = new Date(today);
+        sunday.setDate(today.getDate() - dayOfWeek);
+
+        // Pega sábado da semana atual
+        const saturday = new Date(sunday);
+        saturday.setDate(sunday.getDate() + 6);
+
+        // Formata datas para yyyy-mm-dd
+        const startDate = sunday.toISOString().slice(0, 10);
+        const endDate = saturday.toISOString().slice(0, 10);
+
+        const { data: attendance, error: attendanceError } = await supabase
+          .from('attendance')
+          .select('check_in_date')
+          .gte('check_in_date', startDate)
+          .lte('check_in_date', endDate)
+          .order('check_in_date', { ascending: true });
+
+        if (attendanceError) throw attendanceError;
+
+        // Contar presenças por dia da semana
+        const countByDate: Record<string, number> = {};
+        attendance?.forEach((item) => {
+          const day = item.check_in_date?.substring(0, 10); // yyyy-mm-dd
+          if (day) countByDate[day] = (countByDate[day] || 0) + 1;
+        });
+
+        // Montar array para o gráfico com dias da semana em português
+        const dayNames = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+        const weeklyData: AttendanceData[] = [];
+
+        for (let i = 0; i < 7; i++) {
+          const date = new Date(sunday);
+          date.setDate(sunday.getDate() + i);
+          const dateStr = date.toISOString().slice(0, 10);
+          weeklyData.push({
+            name: dayNames[date.getDay()],
+            count: countByDate[dateStr] || 0,
+          });
+        }
+
+        setAttendanceData(weeklyData);
+
       } catch (error) {
         console.error('Error fetching dashboard data:', error);
         toast({
@@ -108,11 +147,11 @@ const Dashboard = () => {
           Olá, {user?.email?.split('@')[0] || 'Administrador'}
         </h1>
         <p className="text-sm text-gray-500">
-          {new Date().toLocaleDateString('pt-BR', { 
-            weekday: 'long', 
-            year: 'numeric', 
-            month: 'long', 
-            day: 'numeric' 
+          {new Date().toLocaleDateString('pt-BR', {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
           })}
         </p>
       </div>
@@ -143,7 +182,10 @@ const Dashboard = () => {
           <CardContent>
             <div className="text-3xl font-bold">{stats.paidMembers}</div>
             <p className="text-xs text-muted-foreground">
-              {Math.round((stats.paidMembers / stats.activeMembers) * 100)}% dos membros ativos
+              {stats.activeMembers > 0
+                ? Math.round((stats.paidMembers / stats.activeMembers) * 100)
+                : 0}
+              % dos membros ativos
             </p>
           </CardContent>
         </Card>
@@ -180,11 +222,11 @@ const Dashboard = () => {
                   <XAxis dataKey="name" />
                   <YAxis />
                   <Tooltip />
-                  <Bar 
-                    dataKey="count" 
-                    fill="#9b87f5" 
-                    radius={[4, 4, 0, 0]} 
-                    name="Frequência" 
+                  <Bar
+                    dataKey="count"
+                    fill="#9b87f5"
+                    radius={[4, 4, 0, 0]}
+                    name="Frequência"
                   />
                 </ReBarChart>
               </ResponsiveContainer>

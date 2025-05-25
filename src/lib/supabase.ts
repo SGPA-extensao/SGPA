@@ -1,7 +1,6 @@
-
-import { createClient } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 
+// ---------- Tipos ----------
 export type Member = {
   id: string;
   full_name: string;
@@ -35,202 +34,250 @@ export type Payment = {
   payment_date: string;
   next_payment_date: string;
   status: 'paid' | 'pending' | 'overdue';
+  created_at: string;
 };
 
-// Exportando o supabase do integrations/supabase/client para uso em toda a aplicação
+
+export type AgendaEvent = {
+  id: number; // Ajustado para string assumindo UUID, mude para number se for auto-increment
+  title: string;
+  date: string; // formato YYYY-MM-DD
+  time: string; // formato HH:mm:ss
+  responsible: string;
+  created_at: string;
+};
+
+// ---------- Exporta Supabase ----------
 export { supabase };
 
-export const fetchMembers = async () => {
+// ---------- Members ----------
+export const fetchMembers = async (): Promise<Member[]> => {
   const { data, error } = await supabase
     .from('members')
     .select('*')
     .order('full_name', { ascending: true });
-    
-  if (error) {
-    console.error('Erro ao buscar membros:', error);
-    throw error;
-  }
-  
+
+  if (error) throw error;
   return data || [];
 };
 
-export const fetchMemberById = async (id: string) => {
+export const fetchMemberById = async (id: string): Promise<Member | null> => {
   const { data, error } = await supabase
     .from('members')
     .select('*')
     .eq('id', id)
     .single();
-    
-  if (error) {
-    console.error('Erro ao buscar membro:', error);
-    throw error;
-  }
-  
+
+  if (error) throw error;
   return data;
 };
 
-export const createMember = async (member: Omit<Member, 'id' | 'created_at'>) => {
+export const createMember = async (member: Omit<Member, 'id' | 'created_at'>): Promise<Member> => {
   const { data, error } = await supabase
     .from('members')
     .insert([member])
     .select()
     .single();
-    
-  if (error) {
-    console.error('Erro ao criar membro:', error);
-    throw error;
-  }
-  
+
+  if (error) throw error;
   return data;
 };
 
-export const updateMember = async (id: string, member: Partial<Omit<Member, 'id' | 'created_at'>>) => {
+export const updateMember = async (
+  id: string,
+  member: Partial<Omit<Member, 'id' | 'created_at'>>
+): Promise<Member> => {
   const { data, error } = await supabase
     .from('members')
     .update(member)
     .eq('id', id)
     .select()
     .single();
-    
-  if (error) {
-    console.error('Erro ao atualizar membro:', error);
-    throw error;
-  }
-  
+
+  if (error) throw error;
   return data;
 };
 
-export const toggleMemberStatus = async (id: string, status: boolean) => {
+export const toggleMemberStatus = async (id: string, status: boolean): Promise<Member> => {
   const { data, error } = await supabase
     .from('members')
     .update({ status })
     .eq('id', id)
     .select()
     .single();
-    
-  if (error) {
-    console.error('Erro ao alterar status do membro:', error);
-    throw error;
-  }
-  
+
+  if (error) throw error;
   return data;
 };
 
-export const deleteMember = async (id: string) => {
+export const deleteMember = async (id: string): Promise<boolean> => {
   const { error } = await supabase
     .from('members')
     .delete()
     .eq('id', id);
-    
-  if (error) {
-    console.error('Erro ao excluir membro:', error);
-    throw error;
-  }
-  
+
+  if (error) throw error;
   return true;
 };
 
-export const fetchPlans = async () => {
+// ---------- Plans ----------
+export const fetchPlans = async (): Promise<Plan[]> => {
   const { data, error } = await supabase
     .from('plans')
     .select('*')
     .order('name', { ascending: true });
-    
-  if (error) {
-    console.error('Erro ao buscar planos:', error);
-    throw error;
-  }
-  
+
+  if (error) throw error;
   return data || [];
 };
 
-export const fetchAttendanceByMemberId = async (memberId: string) => {
+// ---------- Attendance ----------
+export const fetchAttendanceByMemberId = async (memberId: string): Promise<Attendance[]> => {
   const { data, error } = await supabase
     .from('attendance')
     .select('*')
     .eq('member_id', memberId)
     .order('check_in_date', { ascending: false });
-    
-  if (error) {
-    console.error('Erro ao buscar registros de presença:', error);
-    throw error;
-  }
-  
+
+  if (error) throw error;
   return data || [];
 };
 
-export const registerAttendance = async (memberId: string) => {
+export const fetchAttendanceByDate = async (date: string): Promise<Attendance[]> => {
   const { data, error } = await supabase
     .from('attendance')
-    .insert([{ member_id: memberId }])
+    .select('*')
+    .gte('check_in_date', `${date}T00:00:00`)
+    .lt('check_in_date', `${date}T23:59:59`);
+
+  if (error) throw error;
+  return data || [];
+};
+
+export const registerAttendance = async (memberId: string, date: string): Promise<Attendance> => {
+  const { data, error } = await supabase
+    .from('attendance')
+    .insert([{ member_id: memberId, check_in_date: `${date}T12:00:00Z` }])
     .select()
     .single();
-    
-  if (error) {
-    console.error('Erro ao registrar presença:', error);
-    throw error;
-  }
-  
+
+  if (error) throw error;
   return data;
 };
 
-export const fetchPaymentsByMemberId = async (memberId: string) => {
+export const registerAttendanceToday = async (memberId: string): Promise<Attendance> => {
+  const today = new Date().toISOString().split('T')[0];
+  return registerAttendance(memberId, today);
+};
+
+export const deleteAttendance = async (memberId: string, date: string): Promise<boolean> => {
+  const { error } = await supabase
+    .from('attendance')
+    .delete()
+    .eq('member_id', memberId)
+    .gte('check_in_date', `${date}T00:00:00`)
+    .lt('check_in_date', `${date}T23:59:59`);
+
+  if (error) throw error;
+  return true;
+};
+
+// ---------- Payments ----------
+type RawPayment = Omit<Payment, 'status'> & { status: string | null | undefined };
+
+const validatePaymentStatus = (payment: RawPayment): Payment => {
+  const status = ['paid', 'pending', 'overdue'].includes(payment.status ?? '')
+    ? (payment.status as Payment['status'])
+    : 'pending';
+
+  return { ...payment, status };
+};
+
+export const fetchPaymentsByMemberId = async (memberId: string): Promise<Payment[]> => {
   const { data, error } = await supabase
     .from('payments')
     .select('*')
     .eq('member_id', memberId)
     .order('payment_date', { ascending: false });
-    
-  if (error) {
-    console.error('Erro ao buscar pagamentos:', error);
-    throw error;
-  }
-  
-  // Garantir que o status do pagamento está entre os valores permitidos
-  const validPayments = (data || []).map(payment => {
-    // Verificar se o status é válido, caso contrário converter para um valor válido
-    let validStatus: 'paid' | 'pending' | 'overdue' = 'pending';
-    
-    if (payment.status === 'paid' || payment.status === 'pending' || payment.status === 'overdue') {
-      validStatus = payment.status as 'paid' | 'pending' | 'overdue';
-    }
-    
-    return {
-      ...payment,
-      status: validStatus
-    } as Payment;
-  });
-  
-  return validPayments;
+
+  if (error) throw error;
+
+  return (data || []).map(validatePaymentStatus);
 };
 
-export const createPayment = async (payment: Omit<Payment, 'id' | 'created_at'>) => {
+export const createPayment = async (payment: Omit<Payment, 'id' | 'created_at'>): Promise<Payment> => {
   const { data, error } = await supabase
     .from('payments')
     .insert([payment])
     .select()
     .single();
-    
-  if (error) {
-    console.error('Erro ao criar pagamento:', error);
-    throw error;
-  }
-  
-  return data;
+
+  if (error) throw error;
+  return validatePaymentStatus(data);
 };
 
-export const updatePayment = async (id: string, payment: Partial<Omit<Payment, 'id' | 'created_at'>>) => {
+export const updatePayment = async (
+  id: string,
+  payment: Partial<Omit<Payment, 'id' | 'created_at'>>
+): Promise<Payment> => {
   const { data, error } = await supabase
     .from('payments')
     .update(payment)
     .eq('id', id)
     .select()
     .single();
-    
-  if (error) {
-    console.error('Erro ao atualizar pagamento:', error);
-    throw error;
-  }
-  
+
+  if (error) throw error;
+  return validatePaymentStatus(data);
+};
+
+
+// ---------- Agenda ----------
+export const fetchAgendaEvents = async (): Promise<AgendaEvent[]> => {
+  const { data, error } = await supabase
+    .from('agenda')
+    .select('*')
+    .order('date', { ascending: true })
+    .order('time', { ascending: true });
+
+  if (error) throw error;
+  return data || [];
+};
+
+export const createAgendaEvent = async (
+  event: Omit<AgendaEvent, 'id' | 'created_at'>
+): Promise<AgendaEvent> => {
+  const { data, error } = await supabase
+    .from('agenda')
+    .insert([event])
+    .select()
+    .single();
+
+  if (error) throw error;
   return data;
+};
+
+export const updateAgendaEvent = async (
+  id: number,
+  event: Partial<Omit<AgendaEvent, 'id' | 'created_at'>>
+): Promise<AgendaEvent> => {
+  const { data, error } = await supabase
+    .from('agenda')
+    .update(event)
+    .eq('id', id)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
+};
+
+export const deleteAgendaEvent = async (id: number): Promise<boolean> => {
+  const { error } = await supabase
+    .from('agenda')
+    .delete()
+    .eq('id', id);
+
+  if (error) throw error;
+  return true;
 };
