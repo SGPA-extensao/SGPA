@@ -1,73 +1,68 @@
-# Welcome to your Lovable project
+Project info
+URL: serene-banoffee-eb5601.netlify.app
 
-## Project info
+Sobre o projeto
+Este é um projeto desenvolvido na disciplina de Extensão I do Instituto Federal de Mato Grosso (IFMT), com foco em oferecer uma solução simples e eficiente para a gestão de pequenas academias. A proposta é facilitar o controle de alunos, treinos e presença por meio de uma aplicação moderna e acessível.
 
-**URL**: https://lovable.dev/projects/1123d456-9442-49e0-9ecf-386ae9cb4da1
+Como posso editar este código?
+Você pode editar este projeto de várias formas:
 
-## How can I edit this code?
+1. Usar seu editor de código favorito
+Caso prefira trabalhar localmente com seu próprio editor (VS Code, por exemplo), siga os passos abaixo:
 
-There are several ways of editing your application.
-
-**Use Lovable**
-
-Simply visit the [Lovable Project](https://lovable.dev/projects/1123d456-9442-49e0-9ecf-386ae9cb4da1) and start prompting.
-
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
+sh
+Copiar
+Editar
+# Passo 1: Clone o repositório usando a URL do projeto.
 git clone <YOUR_GIT_URL>
 
-# Step 2: Navigate to the project directory.
+# Passo 2: Acesse o diretório do projeto.
 cd <YOUR_PROJECT_NAME>
 
-# Step 3: Install the necessary dependencies.
+# Passo 3: Instale as dependências.
 npm i
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+# Passo 4: Inicie o servidor de desenvolvimento com recarregamento automático.
 npm run dev
-```
+Requisitos: Ter o Node.js e npm instalados. Recomendamos usar o nvm para instalar.
 
-**Edit a file directly in GitHub**
+2. Editar diretamente no GitHub
+Vá até o arquivo desejado no repositório.
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+Clique no ícone de lápis ("Edit").
 
-**Use GitHub Codespaces**
+Faça as alterações e confirme o commit.
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+3. Usar GitHub Codespaces
+Na página principal do repositório, clique em "Code".
 
-## What technologies are used for this project?
+Vá até a aba "Codespaces".
 
-This project is built with:
+Clique em "New codespace" para iniciar um ambiente online.
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+Edite os arquivos diretamente e faça o commit quando terminar.
 
-## How can I deploy this project?
+Tecnologias utilizadas
+Este projeto foi desenvolvido com:
 
-Simply open [Lovable](https://lovable.dev/projects/1123d456-9442-49e0-9ecf-386ae9cb4da1) and click on Share -> Publish.
+Vite
 
-## Can I connect a custom domain to my Lovable project?
+TypeScript
 
-Yes, you can!
+React
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+shadcn-ui
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+Tailwind CSS
+
+Como posso publicar este projeto?
+Se quiser publicar ou compartilhar o projeto, você pode utilizar a funcionalidade de build e deploy da sua própria hospedagem, ou seguir os métodos de deploy recomendados para projetos Vite + React, como:
+
+Vercel
+
+Netlify
+
+GitHub Pages
+
+Posso conectar um domínio personalizado?
+Sim! Plataformas de deploy como Vercel e Netlify permitem conectar domínios personalizados facilmente.
