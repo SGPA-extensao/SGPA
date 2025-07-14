@@ -8,9 +8,9 @@ interface LayoutProps {
 }
 
 const LoadingSpinner = () => (
-  <div 
-    role="status" 
-    aria-live="polite" 
+  <div
+    role="status"
+    aria-live="polite"
     aria-label="Carregando conteúdo"
     className="min-h-screen flex items-center justify-center bg-fitpro-lightGray dark:bg-fitpro-darkBg"
   >
@@ -45,7 +45,7 @@ const Layout = ({ children }: LayoutProps) => {
   const [darkMode, setDarkMode] = useState(() => {
     if (typeof window !== 'undefined') {
       return localStorage.getItem('darkMode') === 'true' ||
-             (!localStorage.getItem('darkMode') && window.matchMedia('(prefers-color-scheme: dark)').matches);
+        (!localStorage.getItem('darkMode') && window.matchMedia('(prefers-color-scheme: dark)').matches);
     }
     return false;
   });

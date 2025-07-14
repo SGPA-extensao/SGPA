@@ -50,18 +50,20 @@ const Login = () => {
               <span className="text-fitpro-purple">Supere seus limites.</span>
             </h1>
             <p className="text-gray-300 text-base max-w-lg leading-relaxed">
-              Na <span className="font-semibold text-white">Academia Moviment</span>, acreditamos no poder da evolução constante.
+              Na <span className="font-semibold text-white">Academia Movimento</span>, acreditamos no poder da evolução constante.
               Nossa missão é guiá-lo rumo ao seu melhor desempenho com tecnologia, suporte e dedicação de ponta.
             </p>
             <div className="flex flex-wrap gap-4">
-              <Button className="bg-white text-black px-6 font-semibold hover:bg-gray-100 transition">
-                Começar agora
-              </Button>
+              <Link to="/contato">
+                <Button className="bg-white text-black px-6 font-semibold hover:bg-gray-100 transition">
+                  Começar agora
+                </Button>
+              </Link>
               <Link
                 to="/signup"
                 className="text-sm underline text-gray-400 hover:text-white transition self-center"
               >
-                Criar uma conta
+
               </Link>
             </div>
           </div>
@@ -69,7 +71,7 @@ const Login = () => {
           {/* Card de login */}
           <div className="bg-white text-black rounded-xl shadow-md p-8 w-full max-w-md">
             <div className="text-center mb-6">
-              <h1 className="text-3xl font-bold text-black">Academia Moviment</h1>
+              <h1 className="text-3xl font-bold text-black">Academia Movimento</h1>
             </div>
 
             {error && (

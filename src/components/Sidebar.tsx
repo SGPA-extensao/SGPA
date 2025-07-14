@@ -3,12 +3,12 @@ import { NavLink, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/context/AuthContext';
 import { cn } from '@/lib/utils';
-import { 
-  LayoutDashboard, 
-  Users, 
-  Settings, 
-  LogOut, 
-  ChevronLeft, 
+import {
+  LayoutDashboard,
+  Users,
+  Settings,
+  LogOut,
+  ChevronLeft,
   ChevronRight,
   BarChart,
   Calendar,
@@ -28,7 +28,6 @@ export const Sidebar = () => {
   const navItems = [
     { name: 'Dashboard', path: '/dashboard', icon: <LayoutDashboard className="h-5 w-5 transition-colors" /> },
     { name: 'Membros', path: '/members', icon: <Users className="h-5 w-5 transition-colors" /> },
-    { name: 'Frequência', path: '/frequencia', icon: <BarChart className="h-5 w-5 transition-colors" /> },
     { name: 'Agenda', path: '/agenda', icon: <Calendar className="h-5 w-5 transition-colors" /> },
     { name: 'Pagamentos', path: '/payments', icon: <CreditCard className="h-5 w-5 transition-colors" /> },
     { name: 'Treinos', path: '/trainings', icon: <List className="h-5 w-5 transition-colors" /> },
@@ -36,7 +35,7 @@ export const Sidebar = () => {
   ];
 
   return (
-    <div 
+    <div
       className={cn(
         "h-screen bg-white dark:bg-fitpro-darkBg text-fitpro-darkGray dark:text-fitpro-darkText border-r border-gray-200 dark:border-fitpro-darkBorder flex flex-col overflow-hidden shadow-lg",
         "transition-width duration-300 ease-in-out",
@@ -50,10 +49,14 @@ export const Sidebar = () => {
         collapsed ? "justify-center" : "justify-between"
       )}>
         {!collapsed ? (
-          <div className="flex items-center select-none text-fitpro-purple dark:text-fitpro-lightPurple">
-            <span className="text-2xl font-extrabold tracking-wide">FitPro</span>
-            <span className="text-2xl font-extrabold ml-1 tracking-wide text-fitpro-darkPurple dark:text-fitpro-purple">Gym</span>
+          <div className="flex items-center select-none">
+            <img
+              src="/logo.png"
+              alt="Logo Movimento"
+              className="h-15 w-auto"
+            />
           </div>
+
         ) : (
           <div className="text-2xl font-extrabold text-fitpro-purple dark:text-fitpro-lightPurple select-none">FP</div>
         )}
