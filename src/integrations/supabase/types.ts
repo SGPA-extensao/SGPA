@@ -247,5 +247,5 @@ export type Database = {
 
 type DefaultSchema = Database[Extract<keyof Database, "public">]
 
-// ... O restante das helpers (Tables, TablesInsert, TablesUpdate, etc) fica igual ao seu original.
+
 

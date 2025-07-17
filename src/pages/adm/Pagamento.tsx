@@ -1,159 +1,174 @@
-import React, { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabase';
-import { useToast } from '@/components/ui/use-toast';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { User, QrCode, Save, Loader2 } from 'lucide-react';
+// src/pages/adm/Pagamento.tsx
+import React, { useState } from 'react';
+// Importa o tipo 'Database' do seu arquivo Supabase types
+import { Database } from '../../integrations/supabase/types'; // Caminho ajustado
 
-interface Member {
-  id: string;
-  full_name: string;
-  plan_id: number;
-}
+// Define um tipo mais fácil de usar para o membro e plano, baseado no Supabase
+type MemberRow = Database['public']['Tables']['members']['Row'];
+type PlanRow = Database['public']['Tables']['plans']['Row'];
 
-interface Plan {
-  id: number;
-  name: string;
-  price: number;
-}
+// Importações dos componentes Shadcn/UI
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 
-const PagamentoPix = () => {
-  const { toast } = useToast();
-  const [members, setMembers] = useState<Member[]>([]);
-  const [plans, setPlans] = useState<Plan[]>([]);
-  const [selectedMemberId, setSelectedMemberId] = useState('');
-  const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null);
-  const [pixCode, setPixCode] = useState('');
-  const [showQR, setShowQR] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+// Importações dos seus novos componentes (caminhos relativos a Pagamento.tsx)
+import SelectMember from '../../components/SelectMember';
+import MemberInfo from '../../components/MemberInfo';
+import PaymentLinkGenerator from '../../components/PaymentLinkGenerator';
+import WhatsappSender from '../../components/WhatsappSender';
+// import OperationSummary from '../../components/OperationSummary'; // REMOVIDO: Nao sera mais usado
 
-  useEffect(() => {
-    const fetchData = async () => {
-      const [{ data: membersData }, { data: plansData }] = await Promise.all([
-        supabase.from('members').select('id, full_name, plan_id').order('full_name'),
-        supabase.from('plans').select('*'),
-      ]);
 
-      setMembers(membersData || []);
-      setPlans(plansData || []);
+// Dados mockados para simular a lista de membros
+const MOCKED_MEMBERS: MemberRow[] = [
+    {
+        id: 'm1', full_name: "João Silva Santos", phone: "(65) 99999-1234",
+        plan_id: 1,
+        cpf_id: '111.111.111-11', created_at: new Date().toISOString(), entry_date: new Date().toISOString().split('T')[0], notes: null, status: true, user_id: 'user1'
+    },
+    {
+        id: 'm2', full_name: "Maria Oliveira Costa", phone: "(65) 98888-5678",
+        plan_id: 2,
+        cpf_id: '222.222.222-22', created_at: new Date().toISOString(), entry_date: new Date().toISOString().split('T')[0], notes: null, status: true, user_id: 'user2'
+    },
+    {
+        id: 'm3', full_name: "Pedro Santos Lima", phone: null, // Telefone nulo para testar o aviso
+        plan_id: 3,
+        cpf_id: '333.333.333-33', created_at: new Date().toISOString(), entry_date: new Date().toISOString().split('T')[0], notes: null, status: true, user_id: 'user3'
+    },
+    {
+        id: 'm4', full_name: "Ana Carolina Ferreira", phone: "(65) 97777-9999",
+        plan_id: 4,
+        cpf_id: '444.444.444-44', created_at: new Date().toISOString(), entry_date: new Date().toISOString().split('T')[0], notes: null, status: true, user_id: 'user4'
+    },
+];
+
+// Mock de planos para associar plan_id com nome e preço do plano
+const MOCKED_PLANS: PlanRow[] = [
+    { id: 1, name: "Plano Básico", price: 89.90, description: "Plano mensal básico", duration_months: 1 },
+    { id: 2, name: "Plano Premium", price: 149.90, description: "Plano mensal premium", duration_months: 1 },
+    { id: 3, name: "Plano VIP", price: 199.90, description: "Plano mensal VIP", duration_months: 1 },
+    { id: 4, name: "Plano Diário", price: 30.00, description: "Acesso por um dia", duration_months: 0 },
+];
+
+
+function PagamentoPage() {
+    // Estado para armazenar o membro selecionado
+    const [selectedMember, setSelectedMember] = useState<MemberRow | null>(null);
+    // Estado: Para armazenar o link de pagamento gerado (ou QR Code)
+    type GeneratedPaymentContent = { type: 'link' | 'qr_code', value: string } | null;
+    const [generatedPaymentContent, setGeneratedPaymentContent] = useState<GeneratedPaymentContent>(null);
+
+
+    // Função que será chamada pelo componente SelectMember quando um membro for escolhido
+    const handleMemberSelect = (memberId: string) => {
+        const member = MOCKED_MEMBERS.find(m => m.id === memberId);
+        setSelectedMember(member || null);
+        setGeneratedPaymentContent(null); // Reseta o conteúdo gerado ao trocar de membro
     };
 
-    fetchData();
-  }, []);
+    // Função auxiliar para obter o nome e preço do plano de um membro
+    // Essa função será passada para os componentes filhos
+    const getMemberPlanDetails = (member: MemberRow | null) => {
+        if (!member) return { name: '', price: 0 };
+        const plan = MOCKED_PLANS.find(p => p.id === member.plan_id);
+        return { name: plan?.name || 'Plano Desconhecido', price: plan?.price || 0 };
+    };
 
-  useEffect(() => {
-    const member = members.find(m => m.id === selectedMemberId);
-    const plan = member ? plans.find(p => p.id === member.plan_id) : null;
-    setSelectedPlan(plan || null);
-    setPixCode('');
-    setShowQR(false);
-  }, [selectedMemberId, members, plans]);
+    // Função para simular a geração do link de pagamento ou QR Code
+    const handleGeneratePaymentContent = (type: 'link' | 'qr_code') => {
+        if (!selectedMember) return;
 
-  const generatePix = () => {
-    if (!selectedPlan) {
-      toast({ title: 'Aviso', description: 'Selecione um membro com plano.' });
-      return;
-    }
+        let value: string;
+        if (type === 'link') {
+            value = `https://stripe.com/test_link_${Math.random().toString(36).substring(2, 10)}`;
+        } else { // type === 'qr_code'
+            value = `https://stripe.com/test_qr_${Math.random().toString(36).substring(2, 10)}`;
+        }
+        setGeneratedPaymentContent({ type, value });
+    };
 
-    const code = `PIX-${Math.random().toString(36).substring(2, 12).toUpperCase()}`;
-    setPixCode(code);
-    setShowQR(true);
-  };
 
-  const handleConfirmPayment = async () => {
-    if (!selectedMemberId || !selectedPlan || !pixCode) return;
-
-    setIsLoading(true);
-    try {
-      const now = new Date();
-      const nextDate = new Date();
-      nextDate.setMonth(now.getMonth() + 1);
-
-      const { error } = await supabase.from('payments').insert({
-        member_id: selectedMemberId,
-        amount: selectedPlan.price,
-        status: 'paid',
-        payment_date: now.toISOString(),
-        next_payment_date: nextDate.toISOString(),
-        created_at: now.toISOString(),
-        method: 'pix',
-        payment_code: pixCode,
-      });
-
-      if (error) throw error;
-
-      toast({ title: 'Pagamento registrado com sucesso!' });
-      setSelectedMemberId('');
-      setPixCode('');
-      setShowQR(false);
-    } catch {
-      toast({ title: 'Erro', description: 'Falha ao salvar pagamento.', variant: 'destructive' });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  return (
-    <div className="min-h-screen text-white p-6 max-w-3xl mx-auto">
-      <h1 className="text-3xl font-bold mb-6 text-center">💸 Pagamento por Pix</h1>
-
-      <div className="bg-zinc-900 rounded-2xl p-6 space-y-6">
-        <div>
-          <label className="flex items-center gap-2 mb-2 text-sm font-medium">
-            <User className="w-4 h-4" /> Membro
-          </label>
-          <select
-            value={selectedMemberId}
-            onChange={e => setSelectedMemberId(e.target.value)}
-            className="bg-zinc-800 border border-zinc-700 text-white rounded-lg px-4 py-2 w-full"
-          >
-            <option value="">Selecione um membro</option>
-            {members.map(({ id, full_name }) => (
-              <option key={id} value={id}>{full_name}</option>
-            ))}
-          </select>
-        </div>
-
-        <div>
-          <label className="block mb-2 text-sm font-medium">Plano</label>
-          <Input
-            value={selectedPlan ? `${selectedPlan.name} - R$ ${selectedPlan.price.toFixed(2)}` : ''}
-            readOnly
-            className="bg-zinc-800 border border-zinc-700 text-white"
-          />
-        </div>
-
-        <Button
-          onClick={generatePix}
-          disabled={!selectedPlan}
-          className="w-full bg-indigo-600 hover:bg-indigo-700 text-white flex items-center gap-2 justify-center"
-        >
-          <QrCode className="w-4 h-4" /> Gerar Pix
-        </Button>
-
-        {showQR && (
-          <div className="text-center space-y-4">
-            <p className="text-sm text-gray-300">Escaneie o QR Code abaixo:</p>
-            <div className="flex justify-center">
-              <img src="/image.png" alt="QR Code Pix" className="w-52 h-52 rounded-lg border border-green-500" />            </div>
-            <div className="bg-zinc-800 text-green-400 border border-green-500 rounded-lg px-4 py-3 font-mono break-words text-center">
-              {pixCode}
+    return (
+        // Classes Tailwind CSS para estilização (background, padding, cores de texto)
+        <div className="p-6 bg-gray-900 text-gray-300 min-h-screen">
+            {/* Header / Navegação */}
+            <div className="flex items-center mb-5">
+                {/* Ícone de voltar (pode ser um componente de ícone do seu sistema) */}
+                <button className="text-gray-300 text-2xl cursor-pointer mr-4">←</button>
+                <h1 className="text-3xl font-bold text-gray-100">Pagamento via Stripe</h1>
+                <div className="ml-auto flex items-center">
+                    <Button variant="outline" className="mr-4">Atualizar</Button>
+                    <span className="text-lg text-gray-300"> Academia System</span>
+                </div>
             </div>
-          </div>
-        )}
 
-        {showQR && (
-          <Button
-            onClick={handleConfirmPayment}
-            disabled={isLoading}
-            className="w-full bg-emerald-600 hover:bg-emerald-700 text-white flex items-center gap-2 justify-center"
-          >
-            {isLoading ? <><Loader2 className="animate-spin w-4 h-4" /> Salvando...</> : <><Save className="w-4 h-4" /> Marcar como Pago</>}
-          </Button>
-        )}
-      </div>
-    </div>
-  );
-};
+            <p className="mb-8 text-gray-400">Gere links de pagamento e envie via WhatsApp</p>
 
-export default PagamentoPix;
+            {/* Grid para organizar os 4 blocos principais */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                {/* Bloco 1: Selecionar Membro */}
+                <Card className="bg-gray-800 text-gray-300">
+                    <CardHeader>
+                        <CardTitle className="text-xl font-bold text-gray-100">1. Selecionar Membro</CardTitle>
+                        <CardDescription className="text-gray-400">Escolha o membro que receberá o link de pagamento</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <SelectMember
+                            members={MOCKED_MEMBERS}
+                            onMemberSelect={handleMemberSelect}
+                            selectedMemberId={selectedMember?.id || ''}
+                            getMemberPlanDetails={getMemberPlanDetails}
+                        />
+                    </CardContent>
+                </Card>
+
+                {/* Bloco 3: Gerar Link/QR Code de Pagamento */}
+                <Card className="bg-gray-800 text-gray-300">
+                    <CardHeader>
+                        <CardTitle className="text-xl font-bold text-gray-100">3. Gerar Link de Pagamento</CardTitle>
+                        <CardDescription className="text-gray-400">Crie o link seguro do Stripe para o membro</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <PaymentLinkGenerator
+                            member={selectedMember}
+                            memberPlanPrice={getMemberPlanDetails(selectedMember).price}
+                            onGenerate={handleGeneratePaymentContent}
+                            generatedContent={generatedPaymentContent}
+                            hasMissingPhone={!selectedMember?.phone}
+                        />
+                    </CardContent>
+                </Card>
+
+                {/* Bloco 2: Informações do Membro */}
+                <Card className="bg-gray-800 text-gray-300">
+                    <CardHeader>
+                        <CardTitle className="text-xl font-bold text-gray-100">2. Informações do Membro</CardTitle>
+                        <CardDescription className="text-gray-400">Verifique os dados antes de gerar o link</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <MemberInfo member={selectedMember} getMemberPlanDetails={getMemberPlanDetails} />
+                    </CardContent>
+                </Card>
+
+                {/* Bloco 4: Enviar via WhatsApp */}
+                <Card className="bg-gray-800 text-gray-300">
+                    <CardHeader>
+                        <CardTitle className="text-xl font-bold text-gray-100">4. Enviar via WhatsApp</CardTitle>
+                        <CardDescription className="text-gray-400">Envie o link automaticamente para o membro</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <WhatsappSender
+                            member={selectedMember}
+                            generatedLink={generatedPaymentContent?.type === 'link' ? generatedPaymentContent.value : null}
+                            getMemberPlanDetails={getMemberPlanDetails}
+                        />
+                    </CardContent>
+                </Card>
+            </div>
+            {/* O bloco "Resumo da Operação" foi completamente removido daqui */}
+        </div>
+    );
+}
+
+export default PagamentoPage;
