@@ -306,7 +306,7 @@ const MemberProfile = () => {
         description: `Membro ${
           updatedStatus ? 'ativado' : 'desativado'
         } com sucesso!`,
-        variant: 'success',
+        variant: 'default',
       });
     } catch (error) {
       toast({

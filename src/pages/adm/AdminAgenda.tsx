@@ -5,7 +5,7 @@ import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import ptBrLocale from '@fullcalendar/core/locales/pt-br';
-import { supabase } from '@/lib/supabase';
+import { supabase, AgendaEvent } from '@/lib/supabase';
 import Tippy from '@tippyjs/react';
 import 'tippy.js/dist/tippy.css';
 
@@ -15,7 +15,8 @@ interface EventData {
   date: string;
   time: string;
   responsible: string;
-  status?: 'active' | 'denied';
+  status?: 'active' | 'denied' | 'pending';
+  created_at?: string;
 }
 
 const emptyEvent: EventData = {
@@ -187,7 +188,7 @@ const AgendaAdm: React.FC = () => {
       setLoading(true);
       const { error } = await supabase
         .from('agenda')
-        .update({ status: 'denied' })
+        .update({ status: 'denied' } as AgendaEvent)
         .eq('id', Number(eventData.id));
       if (error) throw error;
       setToastMessage('Evento negado.');
@@ -260,7 +261,7 @@ const AgendaAdm: React.FC = () => {
   });
 
   return (
-    <div className="p-6 max-w-5xl mx-auto font-sans">
+    <div className="p-6 max-w-5xl mx-auto font-sans bg-white dark:bg-gray-900 text-gray-900 dark:text-white transition-colors">
       <h1
         className="text-3xl font-bold mb-6 text-center text-primary"
         style={{ color: 'hsl(var(--primary))' }}
@@ -271,8 +272,7 @@ const AgendaAdm: React.FC = () => {
       <div className="mb-6 flex flex-wrap justify-center items-center gap-4">
         <label
           htmlFor="filterStatus"
-          className="font-semibold text-primary"
-          style={{ color: 'hsl(var(--primary))' }}
+          className="font-semibold text-primary dark:text-indigo-400"
         >
           Filtrar por status:
         </label>
@@ -280,7 +280,7 @@ const AgendaAdm: React.FC = () => {
           id="filterStatus"
           value={filterStatus}
           onChange={e => setFilterStatus(e.target.value as 'all' | 'active' | 'denied')}
-          className="border rounded px-3 py-1"
+          className="border border-gray-300 dark:border-gray-700 rounded px-3 py-1 bg-white dark:bg-zinc-800 text-gray-900 dark:text-white transition-colors"
         >
           <option value="all">Todos</option>
           <option value="active">Ativos</option>
@@ -292,7 +292,7 @@ const AgendaAdm: React.FC = () => {
           placeholder="Buscar título ou responsável"
           value={searchTerm}
           onChange={e => setSearchTerm(e.target.value)}
-          className="border rounded px-3 py-1 w-64"
+          className="border border-gray-300 dark:border-gray-700 rounded px-3 py-1 w-64 bg-white dark:bg-zinc-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 transition-colors"
           aria-label="Buscar eventos por título ou responsável"
         />
       </div>
@@ -323,13 +323,13 @@ const AgendaAdm: React.FC = () => {
 
       {modalOpen && (
         <div
-          className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-50"
+          className="fixed inset-0 bg-black bg-opacity-40 dark:bg-black/70 flex justify-center items-center z-50"
           onClick={() => setModalOpen(false)}
           aria-modal="true"
           role="dialog"
         >
           <div
-            className="bg-white rounded p-6 w-96 max-w-full"
+            className="bg-white dark:bg-zinc-900 rounded p-6 w-96 max-w-full text-gray-900 dark:text-white border border-gray-200 dark:border-gray-700 transition-colors"
             onClick={e => e.stopPropagation()}
             role="document"
           >
@@ -350,7 +350,7 @@ const AgendaAdm: React.FC = () => {
                   value={eventData.title}
                   onChange={handleInputChange}
                   required
-                  className="w-full border rounded px-3 py-2"
+                  className="w-full border border-gray-300 dark:border-gray-700 rounded px-3 py-2 bg-white dark:bg-zinc-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 transition-colors"
                 />
               </div>
 
@@ -365,7 +365,7 @@ const AgendaAdm: React.FC = () => {
                   value={eventData.date}
                   onChange={handleInputChange}
                   required
-                  className="w-full border rounded px-3 py-2"
+                  className="w-full border border-gray-300 dark:border-gray-700 rounded px-3 py-2 bg-white dark:bg-zinc-800 text-gray-900 dark:text-white transition-colors"
                 />
               </div>
 
@@ -380,7 +380,7 @@ const AgendaAdm: React.FC = () => {
                   value={eventData.time}
                   onChange={handleInputChange}
                   required
-                  className="w-full border rounded px-3 py-2"
+                  className="w-full border border-gray-300 dark:border-gray-700 rounded px-3 py-2 bg-white dark:bg-zinc-800 text-gray-900 dark:text-white transition-colors"
                 />
               </div>
 
@@ -395,7 +395,7 @@ const AgendaAdm: React.FC = () => {
                   value={eventData.responsible}
                   onChange={handleInputChange}
                   required
-                  className="w-full border rounded px-3 py-2"
+                  className="w-full border border-gray-300 dark:border-gray-700 rounded px-3 py-2 bg-white dark:bg-zinc-800 text-gray-900 dark:text-white transition-colors"
                 />
               </div>
 
@@ -408,7 +408,7 @@ const AgendaAdm: React.FC = () => {
                   name="status"
                   value={eventData.status}
                   onChange={handleInputChange}
-                  className="w-full border rounded px-3 py-2"
+                  className="w-full border border-gray-300 dark:border-gray-700 rounded px-3 py-2 bg-white dark:bg-zinc-800 text-gray-900 dark:text-white transition-colors"
                 >
                   <option value="active">Ativo</option>
                   <option value="denied">Negado</option>
@@ -422,7 +422,7 @@ const AgendaAdm: React.FC = () => {
                       type="button"
                       onClick={handleDelete}
                       disabled={loading}
-                      className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
+                      className="bg-red-600 dark:bg-red-700 text-white px-4 py-2 rounded hover:bg-red-700 dark:hover:bg-red-800 transition-colors"
                     >
                       Excluir
                     </button>
@@ -430,7 +430,7 @@ const AgendaAdm: React.FC = () => {
                       type="button"
                       onClick={handleDeny}
                       disabled={loading}
-                      className="bg-yellow-500 text-white px-4 py-2 rounded hover:bg-yellow-600"
+                      className="bg-yellow-500 dark:bg-yellow-600 text-white px-4 py-2 rounded hover:bg-yellow-600 dark:hover:bg-yellow-700 transition-colors"
                     >
                       Negar
                     </button>
@@ -442,15 +442,14 @@ const AgendaAdm: React.FC = () => {
                     type="button"
                     onClick={() => setModalOpen(false)}
                     disabled={loading}
-                    className="bg-gray-300 px-4 py-2 rounded hover:bg-gray-400"
+                    className="bg-gray-300 dark:bg-zinc-700 text-gray-900 dark:text-white px-4 py-2 rounded hover:bg-gray-400 dark:hover:bg-zinc-800 transition-colors"
                   >
                     Cancelar
                   </button>
                   <button
                     type="submit"
                     disabled={loading}
-                    className="bg-primary px-4 py-2 rounded text-white hover:bg-primary-dark"
-                    style={{ backgroundColor: 'hsl(var(--primary))' }}
+                    className="bg-indigo-600 dark:bg-indigo-700 px-4 py-2 rounded text-white hover:bg-indigo-700 dark:hover:bg-indigo-800 transition-colors"
                   >
                     {loading ? 'Salvando...' : 'Salvar'}
                   </button>
@@ -464,14 +463,13 @@ const AgendaAdm: React.FC = () => {
       {toastMessage && (
         <div
           role="alert"
-          className="fixed bottom-6 right-6 bg-primary text-white px-4 py-3 rounded shadow-lg"
-          style={{ backgroundColor: 'hsl(var(--primary))' }}
+          className="fixed bottom-6 right-6 bg-indigo-600 dark:bg-indigo-700 text-white px-4 py-3 rounded shadow-lg transition-colors"
         >
           {toastMessage}
         </div>
       )}
 
-      <style jsx>{`
+      <style>{`
         .denied-event {
           background-color: #f87171 !important; /* vermelho claro */
           border-color: #b91c1c !important; /* vermelho escuro */

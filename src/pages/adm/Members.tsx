@@ -9,7 +9,7 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
-import { supabase, Member, Plan } from '@/lib/supabase';
+import { supabase, Member, Plan, Payment, validatePaymentStatus } from '@/lib/supabase';
 import { useToast } from '@/components/ui/use-toast';
 import {
   PlusCircle, Search, MoreHorizontal, Edit, Eye, UserX, UserCheck, ArrowUpDown, MessageCircle
@@ -17,10 +17,29 @@ import {
 
 // Hook para carregar membros e planos
 function useMembersAndPlans() {
-  const [members, setMembers] = useState<Member[]>([]);
+  const [members, setMembers] = useState<(Member & { lastPayment: Payment | null })[]>([]);
   const [plans, setPlans] = useState<Plan[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
+
+  const fetchLastPayments = useCallback(async (members: Member[]) => {
+    const promises = members.map(async (member) => {
+      const { data } = await supabase
+        .from('payments')
+        .select('*')
+        .eq('member_id', member.id)
+        .order('payment_date', { ascending: false })
+        .limit(1)
+        .single();
+      
+      return {
+        ...member,
+        lastPayment: data ? validatePaymentStatus(data) : null
+      };
+    });
+
+    return Promise.all(promises);
+  }, []);
 
   const fetchData = useCallback(async () => {
     setIsLoading(true);
@@ -36,7 +55,10 @@ function useMembersAndPlans() {
         .select('*');
       if (plansError) throw plansError;
 
-      setMembers(membersData ?? []);
+      // Buscar o último pagamento para cada membro
+      const membersWithPayments = await fetchLastPayments(membersData || []);
+
+      setMembers(membersWithPayments);
       setPlans(plansData ?? []);
     } catch (error) {
       console.error('Erro ao carregar membros ou planos:', error);
@@ -48,7 +70,7 @@ function useMembersAndPlans() {
     } finally {
       setIsLoading(false);
     }
-  }, [toast]);
+  }, [toast, fetchLastPayments]);
 
   useEffect(() => {
     fetchData();
@@ -143,15 +165,44 @@ const Members = () => {
     });
   };
 
+  const dateOptions: Intl.DateTimeFormatOptions = { 
+    timeZone: 'UTC', 
+    month: 'numeric' as const, 
+    day: 'numeric' as const, 
+    year: 'numeric' as const 
+  };
+
+  const dateFormatter = new Intl.DateTimeFormat('pt-BR', dateOptions);
+
+  // Função para buscar o último pagamento de cada membro
+  const fetchLastPayments = useCallback(async (members: Member[]) => {
+    const promises = members.map(async (member) => {
+      const { data } = await supabase
+        .from('payments')
+        .select('*')
+        .eq('member_id', member.id)
+        .order('payment_date', { ascending: false })
+        .limit(1)
+        .single();
+      
+      return {
+        ...member,
+        lastPayment: data ? validatePaymentStatus(data) : null
+      };
+    });
+
+    return Promise.all(promises);
+  }, []);
+
   return (
-    <div className="max-w-7xl mx-auto p-6 space-y-8">
+    <div className="max-w-7xl mx-auto p-6 space-y-8 bg-white dark:bg-gray-900 transition-colors">
       <header className="flex flex-col sm:flex-row justify-between items-center gap-4">
-        <h1 className="text-4xl font-extrabold text-gray-900 tracking-tight flex items-center gap-2 select-none" tabIndex={0}>
+        <h1 className="text-4xl font-extrabold text-gray-900 dark:text-white tracking-tight flex items-center gap-2 select-none" tabIndex={0}>
           Membros
           <button
             aria-label="Ordenar membros por nome"
             onClick={toggleSort}
-            className="text-gray-400 hover:text-fitpro-purple focus:outline-none focus:ring-2 focus:ring-fitpro-purple rounded"
+            className="text-gray-400 dark:text-gray-300 hover:text-fitpro-purple dark:hover:text-indigo-400 focus:outline-none focus:ring-2 focus:ring-fitpro-purple rounded"
             title={`Ordenar por nome (${sortAsc ? 'ascendente' : 'descendente'})`}
           >
             <ArrowUpDown className="w-5 h-5" />
@@ -159,7 +210,7 @@ const Members = () => {
         </h1>
         <Button
           onClick={() => navigate('/members/new')}
-          className="flex items-center gap-2 bg-fitpro-purple hover:bg-fitpro-darkPurple focus:ring-4 focus:ring-fitpro-purple/50"
+          className="flex items-center gap-2 bg-fitpro-purple hover:bg-fitpro-darkPurple dark:bg-indigo-700 dark:hover:bg-indigo-800 text-white focus:ring-4 focus:ring-fitpro-purple/50 transition-colors"
           aria-label="Adicionar novo membro"
           title="Adicionar novo membro"
         >
@@ -169,30 +220,31 @@ const Members = () => {
       </header>
 
       <div className="max-w-md relative">
-        <Search className={`absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none transition-colors duration-200 ${searchTerm ? 'text-fitpro-purple' : 'text-gray-400'}`} />
+        <Search className={`absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none transition-colors duration-200 ${searchTerm ? 'text-fitpro-purple dark:text-indigo-400' : 'text-gray-400 dark:text-gray-500'}`} />
         <Input
           placeholder="Pesquisar por nome ou CPF/ID..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="pl-10 rounded-lg border border-gray-300 shadow-sm placeholder-gray-400 focus:border-fitpro-purple focus:ring-2 focus:ring-fitpro-purple transition"
+          className="pl-10 rounded-lg border border-gray-300 dark:border-gray-700 shadow-sm bg-white dark:bg-zinc-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:border-fitpro-purple focus:ring-2 focus:ring-fitpro-purple transition-colors"
         />
       </div>
 
-      <div className="overflow-x-auto rounded-lg border border-gray-200 shadow-sm">
+      <div className="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm transition-colors">
         <Table className="min-w-[720px]">
-          <TableHeader className="bg-gray-50 sticky top-0 z-10 select-none">
-            <TableRow>
-              <TableHead className="py-3 px-6">Nome</TableHead>
-              <TableHead className="py-3 px-6">Plano</TableHead>
-              <TableHead className="py-3 px-6">Entrada</TableHead>
-              <TableHead className="py-3 px-6">Status</TableHead>
-              <TableHead className="py-3 px-6 text-right">Ações</TableHead>
+          <TableHeader className="bg-gray-50 dark:bg-zinc-800 sticky top-0 z-10 select-none transition-colors">
+            <TableRow className="border-b border-gray-200 dark:border-gray-700">
+              <TableHead className="py-3 px-6 text-gray-900 dark:text-white">Nome</TableHead>
+              <TableHead className="py-3 px-6 text-gray-900 dark:text-white">Plano</TableHead>
+              <TableHead className="py-3 px-6 text-gray-900 dark:text-white">Último Pagamento</TableHead>
+              <TableHead className="py-3 px-6 text-gray-900 dark:text-white">Status Pagamento</TableHead>
+              <TableHead className="py-3 px-6 text-gray-900 dark:text-white">Status</TableHead>
+              <TableHead className="py-3 px-6 text-right text-gray-900 dark:text-white">Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {isLoading ? (
               <TableRow>
-                <TableCell colSpan={5} className="text-center py-20">
+                <TableCell colSpan={6} className="text-center py-20">
                   <svg className="animate-spin mx-auto h-10 w-10 text-fitpro-purple" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
@@ -202,7 +254,7 @@ const Members = () => {
               </TableRow>
             ) : sortedMembers.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} className="text-center py-16 text-gray-500 flex flex-col items-center gap-2 select-none">
+                <TableCell colSpan={6} className="text-center py-16 text-gray-500 flex flex-col items-center gap-2 select-none">
                   <Search className="h-8 w-8 text-gray-400" />
                   Nenhum membro encontrado
                 </TableCell>
@@ -211,46 +263,56 @@ const Members = () => {
               sortedMembers.map((member, idx) => (
                 <TableRow
                   key={member.id}
-                  className={`${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-fitpro-purple/10 transition`}
+                  className={`${idx % 2 === 0 ? 'bg-white dark:bg-zinc-900' : 'bg-gray-50 dark:bg-zinc-800'} hover:bg-fitpro-purple/10 dark:hover:bg-indigo-900 transition-colors`}
                 >
-                  <TableCell className="font-semibold py-4 px-6">{member.full_name}</TableCell>
-                  <TableCell className="py-4 px-6">{planNamesById.get(member.plan_id) ?? 'Desconhecido'}</TableCell>
-                  <TableCell className="py-4 px-6">{new Date(member.entry_date).toLocaleDateString('pt-BR')}</TableCell>
+                  <TableCell className="font-semibold py-4 px-6 text-gray-900 dark:text-white">{member.full_name}</TableCell>
+                  <TableCell className="py-4 px-6 text-gray-900 dark:text-white">{planNamesById.get(member.plan_id) ?? 'Desconhecido'}</TableCell>
+                  <TableCell className="py-4 px-6 text-gray-900 dark:text-white">
+                    {member.lastPayment?.payment_date ? dateFormatter.format(new Date(member.lastPayment.payment_date)) : 'Nunca'}
+                  </TableCell>
                   <TableCell className="py-4 px-6">
-                    <Badge variant={member.status ? 'success' : 'destructive'}>
-                      {member.status ? 'Ativo' : 'Inativo'}
+                    <Badge
+                      variant={member.lastPayment?.status === 'paid' ? 'default' : 'destructive'}
+                      className={member.lastPayment?.status === 'paid' ? 
+        'bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 border border-green-300 dark:border-green-700' : 
+        'bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300 border border-red-300 dark:border-red-700'}
+                    >
+                      {member.lastPayment?.status === 'paid' ? 'Em dia' : 'Pendente'}
                     </Badge>
+                  </TableCell>
+                  <TableCell className="py-4 px-6">
+                    <Badge variant={member.status ? 'default' : 'destructive'} className={member.status ? "bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 border border-green-300 dark:border-green-700" : "bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300 border border-red-300 dark:border-red-700"}>{member.status ? 'Ativo' : 'Inativo'}</Badge>
                   </TableCell>
                   <TableCell className="py-4 px-6 text-right">
                     <DropdownMenu>
-                      <DropdownMenuTrigger className="p-2 hover:bg-gray-100 rounded">
-                        <MoreHorizontal className="h-5 w-5 text-gray-500" />
+                      <DropdownMenuTrigger className="p-2 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded transition-colors">
+                        <MoreHorizontal className="h-5 w-5 text-gray-500 dark:text-gray-300" />
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="w-48">
+                      <DropdownMenuContent align="end" className="w-48 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white shadow-lg transition-colors">
                         <DropdownMenuItem
                           onClick={() => navigate(`/members/view/${member.id}`)}
-                          className="flex items-center gap-2"
+                          className="flex items-center gap-2 hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors"
                         >
-                          <Eye className="h-4 w-4" /> Visualizar
+                          <Eye className="h-4 w-4 text-gray-700 dark:text-gray-200" /> Visualizar
                         </DropdownMenuItem>
                         <DropdownMenuItem
                           onClick={() => navigate(`/members/edit/${member.id}`)}
-                          className="flex items-center gap-2"
+                          className="flex items-center gap-2 hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors"
                         >
-                          <Edit className="h-4 w-4" /> Editar
+                          <Edit className="h-4 w-4 text-indigo-700 dark:text-indigo-400" /> Editar
                         </DropdownMenuItem>
                         <DropdownMenuItem
                           onClick={() => sendWhatsAppMessage(member)}
-                          className="flex items-center gap-2 text-green-600"
+                          className="flex items-center gap-2 text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900 transition-colors"
                         >
                           <MessageCircle className="h-4 w-4" /> Enviar WhatsApp
                         </DropdownMenuItem>
                         <DropdownMenuItem
                           onClick={() => handleToggleStatus(member)}
                           disabled={loadingToggleId === member.id}
-                          className="flex items-center gap-2"
+                          className="flex items-center gap-2 hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors"
                         >
-                          {member.status ? <UserX className="h-4 w-4" /> : <UserCheck className="h-4 w-4" />}
+                          {member.status ? <UserX className="h-4 w-4 text-red-600 dark:text-red-400" /> : <UserCheck className="h-4 w-4 text-green-600 dark:text-green-400" />}
                           {member.status ? 'Desativar' : 'Ativar'}
                         </DropdownMenuItem>
                       </DropdownMenuContent>

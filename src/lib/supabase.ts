@@ -11,6 +11,8 @@ export type Member = {
   status: boolean;
   notes?: string;
   created_at: string;
+  user_id?: string;
+  last_payment_date?: string | null;
 };
 
 export type Plan = {
@@ -19,6 +21,7 @@ export type Plan = {
   description?: string;
   price: number;
   duration_months: number;
+  duration_days?: number;
 };
 
 export type Attendance = {
@@ -33,8 +36,9 @@ export type Payment = {
   amount: number;
   payment_date: string;
   next_payment_date: string;
-  status: 'paid' | 'pending' | 'overdue';
+  status: string;
   created_at: string;
+  receipt_url?: string;
 };
 
 export type trainings = {
@@ -50,12 +54,13 @@ export type trainings = {
 
 
 export type AgendaEvent = {
-  id: number; // Ajustado para string assumindo UUID, mude para number se for auto-increment
+  id: number;
   title: string;
   date: string; // formato YYYY-MM-DD
   time: string; // formato HH:mm:ss
   responsible: string;
   created_at: string;
+  status?: 'active' | 'denied' | 'pending';
 };
 
 // ---------- Exporta Supabase ----------
@@ -139,7 +144,8 @@ export const fetchPlans = async (): Promise<Plan[]> => {
     .order('name', { ascending: true });
 
   if (error) throw error;
-  return data || [];
+
+    return data || [];
 };
 
 // ---------- Attendance ----------
@@ -194,14 +200,35 @@ export const deleteAttendance = async (memberId: string, date: string): Promise<
 };
 
 // ---------- Payments ----------
-type RawPayment = Omit<Payment, 'status'> & { status: string | null | undefined };
+export const validatePaymentStatus = (payment: Payment): Payment => {
+  const nextPaymentDate = new Date(payment.next_payment_date);
+  const today = new Date();
 
-const validatePaymentStatus = (payment: RawPayment): Payment => {
-  const status = ['paid', 'pending', 'overdue'].includes(payment.status ?? '')
-    ? (payment.status as Payment['status'])
-    : 'pending';
+  // Se a data do próximo pagamento já passou, marca como pendente
+  if (nextPaymentDate < today) {
+    return {
+      ...payment,
+      status: 'pending'
+    };
+  }
 
-  return { ...payment, status };
+  // Se não, mantém o status atual
+  return payment;
+};
+
+// Função para converter os dados do pagamento
+const convertPaymentData = (payment: any): Payment | null => {
+  if (!payment) return null;
+
+  return {
+    id: payment.id,
+    member_id: payment.member_id,
+    amount: payment.amount,
+    payment_date: payment.payment_date,
+    next_payment_date: payment.next_payment_date,
+    status: payment.status || 'pending',
+    created_at: payment.created_at
+  };
 };
 
 export const fetchPaymentsByMemberId = async (memberId: string): Promise<Payment[]> => {
@@ -213,7 +240,7 @@ export const fetchPaymentsByMemberId = async (memberId: string): Promise<Payment
 
   if (error) throw error;
 
-  return (data || []).map(validatePaymentStatus);
+  return (data || []).map(payment => convertPaymentData(payment)).filter((p): p is Payment => p !== null);
 };
 
 export const createPayment = async (payment: Omit<Payment, 'id' | 'created_at'>): Promise<Payment> => {
@@ -224,7 +251,9 @@ export const createPayment = async (payment: Omit<Payment, 'id' | 'created_at'>)
     .single();
 
   if (error) throw error;
-  return validatePaymentStatus(data);
+  const validatedPayment = convertPaymentData(data);
+  if (!validatedPayment) throw new Error('Failed to validate payment data');
+  return validatedPayment;
 };
 
 export const updatePayment = async (
@@ -239,7 +268,9 @@ export const updatePayment = async (
     .single();
 
   if (error) throw error;
-  return validatePaymentStatus(data);
+  const validatedPayment = convertPaymentData(data);
+  if (!validatedPayment) throw new Error('Failed to validate payment data');
+  return validatedPayment;
 };
 
 

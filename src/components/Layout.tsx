@@ -91,14 +91,14 @@ const Layout = ({ children }: LayoutProps) => {
   if (!user) return <Navigate to="/login" replace />;
 
   return (
-    <div className="flex min-h-screen bg-fitpro-lightGray dark:bg-fitpro-darkBg text-fitpro-darkGray dark:text-fitpro-darkText">
+    <div className="flex min-h-screen bg-fitpro-lightGray dark:bg-gray-900 text-fitpro-darkGray dark:text-fitpro-darkText">
       {/* Sidebar desktop fixo */}
       <aside
         ref={sidebarRef}
         id="sidebar"
         aria-label="Navegação lateral"
         className={`
-          fixed inset-y-0 left-0 z-40 w-64 bg-white dark:bg-fitpro-darkBg border-r border-gray-200 dark:border-fitpro-darkBorder
+          fixed inset-y-0 left-0 z-40 w-64 bg-fitpro-lightGray dark:bg-gray-900 border-r border-gray-200 dark:border-fitpro-darkBorder
           transform transition-transform duration-300 ease-in-out
           md:translate-x-0
           ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
@@ -120,7 +120,7 @@ const Layout = ({ children }: LayoutProps) => {
       )}
 
       {/* Conteúdo principal */}
-      <div className="flex flex-col flex-1 min-h-screen md:ml-64">
+      <div className="flex flex-col flex-1 min-h-screen md:ml-64 bg-fitpro-lightGray dark:bg-gray-900">
         {/* Header mobile */}
         <header
           role="banner"
@@ -150,7 +150,6 @@ const Layout = ({ children }: LayoutProps) => {
             </svg>
           </button>
           <h1 className="ml-4 text-lg font-semibold select-none">FitPro Gym</h1>
-
           {/* Toggle modo escuro */}
           <button
             aria-label="Alternar modo claro/escuro"
@@ -184,7 +183,7 @@ const Layout = ({ children }: LayoutProps) => {
         <main
           id="main-content"
           tabIndex={-1}
-          className="flex-1 p-6 overflow-y-auto focus:outline-none"
+          className="flex-1 p-6 overflow-y-auto focus:outline-none bg-fitpro-lightGray dark:bg-gray-900"
         >
           {children}
         </main>

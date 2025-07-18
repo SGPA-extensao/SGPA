@@ -42,6 +42,14 @@ const formSchema = z.object({
   notes: z.string().optional(),
 });
 
+// Corrige o fuso horário ao formatar a data para o input tipo date
+const formatDateForInput = (isoDate: string) => {
+  //const date = new Date(isoDate);
+  //const localOffset = date.getTimezoneOffset() * 60000;
+  //const adjustedDate = new Date(date.getTime() - localOffset);
+  return isoDate;
+};
+
 const MemberForm = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -110,7 +118,7 @@ const MemberForm = () => {
         
         if (data) {
           // Format date to YYYY-MM-DD for input
-          const formattedDate = new Date(data.entry_date).toISOString().split('T')[0];
+          const formattedDate = formatDateForInput(data.entry_date);
           
           form.reset({
             full_name: data.full_name,
